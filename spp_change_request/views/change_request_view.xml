@@ -1,0 +1,440 @@
+<!--
+Part of OpenSPP. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <record id="view_change_request_tree" model="ir.ui.view">
+        <field name="name">view_change_request_tree</field>
+        <field name="model">spp.change.request</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree sample="1" decoration-danger="date_rejected != False" delete="0">
+                <button
+                    name="open_change_request_form"
+                    type="object"
+                    help="Open Details"
+                    icon="fa-external-link "
+                    class="btn-success"
+                    attrs="{'invisible':[('request_type_ref_id','=',False)]}"
+                    context="{'show_validation_form':True}"
+                    groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_applicator"
+                />
+                <field name="name" />
+                <field name="date_requested" />
+                <field name="create_uid" string="Requested By" widget="many2one_avatar_user" />
+                <field name="request_type" />
+                <field name="registrant_id" />
+                <field name="applicant_id" />
+                <field name="request_type_ref_id" invisible="1" />
+                <field name="assign_to_id" widget="many2one_avatar_user" />
+                <field name="last_validated_by_id" widget="many2one_avatar_user" />
+                <field name="date_validated" />
+                <field name="applied_by_id" widget="many2one_avatar_user" />
+                <field name="date_applied" />
+                <field name="activity_ids" widget="list_activity" optional="show" />
+                <field name="date_rejected" invisible="1" />
+                <field name="company_id" groups="base.group_multi_company" />
+                <field
+                    name="state"
+                    decoration-info="state=='draft'"
+                    decoration-primary="state=='pending'"
+                    decoration-warning="state=='validated'"
+                    decoration-success="state=='applied'"
+                    decoration-danger="state=='rejected'"
+                    widget="badge"
+                />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_change_request_form" model="ir.ui.view">
+        <field name="name">view_change_request_form</field>
+        <field name="model">spp.change.request</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form string="Change Request" delete="0" duplicate="false">
+                <header>
+                    <button
+                        name="action_submit"
+                        type="object"
+                        string="Request Validation"
+                        icon="fa-paper-plane"
+                        class="btn-primary"
+                        states="draft"
+                        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_agent"
+                    />
+                    <button
+                        name="action_validate"
+                        type="object"
+                        string="Validate"
+                        icon="fa-check-square-o"
+                        class="btn-warning"
+                        states="pending"
+                        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator"
+                    />
+                    <button
+                        name="action_apply"
+                        type="object"
+                        string="Apply Changes"
+                        icon="fa-thumbs-o-up"
+                        class="btn-success"
+                        states="validated"
+                        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_applicator"
+                    />
+                    <button
+                        name="action_reject"
+                        type="object"
+                        string="Reject"
+                        icon="fa-ban"
+                        class="btn-danger"
+                        states="pending"
+                        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_validator"
+                    />
+                    <button
+                        name="action_cancel"
+                        type="object"
+                        string="Cancel Change Request"
+                        icon="fa-times-circle"
+                        class="btn-default"
+                        states="draft,pending,rejected,validated"
+                        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_agent"
+                    />
+                    <button
+                        name="action_reset_to_draft"
+                        type="object"
+                        string="Reset to Draft"
+                        icon="fa-rotate-left"
+                        class="btn-success"
+                        states="rejected"
+                        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_agent"
+                    />
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,pending,validated,applied"
+                    />
+                </header>
+                <div
+                    class="alert alert-danger text-center o_form_header"
+                    role="status"
+                    attrs="{'invisible': [('rejected_by_id', '=', False)]}"
+                >
+                    This change request was REJECTED.
+                </div>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <field name="current_user_assigned" invisible="1" />
+                        <button
+                            name="open_user_assignment_wiz"
+                            type="object"
+                            icon="fa-user-circle"
+                            class="oe_stat_button"
+                            groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_validator,spp_change_request.group_spp_change_request_applicator,spp_change_request.group_spp_change_request_agent"
+                        >
+                            <div
+                                class="o_form_field o_stat_info"
+                                attrs="{'invisible': [('current_user_assigned', '!=', False)]}"
+                            >
+                                <span class="o_stat_text">Assign</span>
+                                <span class="o_stat_text">To Me</span>
+                            </div>
+                            <div
+                                class="o_form_field o_stat_info"
+                                attrs="{'invisible': [('current_user_assigned', '!=', True)]}"
+                            >
+                                <span class="o_stat_text">Reassign</span>
+                            </div>
+                        </button>
+                    </div>
+                    <widget
+                        name="web_ribbon"
+                        title="Draft"
+                        bg_color="bg-info"
+                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                    />
+                    <widget
+                        name="web_ribbon"
+                        title="Pending Validation"
+                        bg_color="bg-primary"
+                        attrs="{'invisible': [('state', '!=', 'pending')]}"
+                    />
+                    <widget
+                        name="web_ribbon"
+                        title="Validated"
+                        bg_color="bg-warning"
+                        attrs="{'invisible': [('state', '!=', 'validated')]}"
+                    />
+                    <widget
+                        name="web_ribbon"
+                        title="Applied"
+                        bg_color="bg-success"
+                        attrs="{'invisible': [('state', '!=', 'applied')]}"
+                    />
+                    <widget
+                        name="web_ribbon"
+                        title="Rejected"
+                        bg_color="bg-danger"
+                        attrs="{'invisible': [('state', '!=', 'rejected')]}"
+                    />
+                    <div class="oe_title mb24">
+                        <label for="name" string="Request #:" />
+                        <h1>
+                            <field name="name" readonly="1" />
+                        </h1>
+                        <label for="request_type" string="Request Type:" />
+                        <h2>
+                            <field
+                                name="request_type"
+                                attrs="{'readonly':['|', ('state','!=','draft'), ('request_type_ref_id','!=',False)]}"
+                            />
+                        </h2>
+                        <label for="registrant_id" string="Registrant:" />
+                        <h2>
+                            <field
+                                name="registrant_id"
+                                options="{'no_create': True,'no_open':True}"
+                                attrs="{'readonly':['|',('state','!=','draft'),('request_type_ref_id','!=',False)]}"
+                                class="oe_inline"
+                            />
+                            <field
+                                name="qr_code_details"
+                                widget="id_document_qrreader_field"
+                                icon="fa-qrcode"
+                                string="Scan QR Code"
+                                colspan="4"
+                                attrs="{'invisible':['|',('state','!=','draft'),('request_type_ref_id','!=',False)]}"
+                                class="oe_inline"
+                                style="margin-left: 10px;"
+                            />
+                        </h2>
+                        <label for="applicant_id" string="Applicant:" />
+                        <h3>
+                            <field
+                                name="applicant_id"
+                                options="{'no_create': True,'no_open':True}"
+                                attrs="{'readonly':['|',('state','!=','draft'),('request_type_ref_id','!=',False)]}"
+                                domain="applicant_id_domain"
+                                required="1"
+                                force_save="1"
+                                class="oe_inline"
+                            />
+                            <!-- ID Document Scanner Widget -->
+                            <field
+                                name="id_document_details"
+                                widget="id_document_reader_field"
+                                icon="fa-id-card-o"
+                                string="Scan ID Document"
+                                colspan="4"
+                                attrs="{'invisible':['|',('state','!=','draft'),('request_type_ref_id','!=',False)]}"
+                                style="margin-left: 10px;"
+                                class="oe_inline"
+                            />
+                            <button
+                                name="open_applicant_form"
+                                type="object"
+                                icon="fa-external-link"
+                                class="btn-success oe_inline"
+                                attrs="{'invisible':[('applicant_id','=',False)]}"
+                                style="margin-left: 10px;"
+                            />
+                        </h3>
+                    </div>
+                    <group colspan="4" col="4" string="Applicant Information">
+                        <field
+                            name="applicant_phone"
+                            string="Phone No."
+                            widget="phone"
+                            options="{'enable_sms': false}"
+                            attrs="{'readonly':[('state','!=','draft')]}"
+                        />
+                    </group>
+                    <footer class="o_footer_bg">
+                        <button
+                            name="create_request_detail"
+                            type="object"
+                            string="NEXT"
+                            icon="fa-chevron-circle-right"
+                            class="btn-primary"
+                            attrs="{'invisible':['|', ('request_type_ref_id','!=',False), ('id', '=', False)]}"
+                            style="margin-left: 10px;"
+                        />
+                        <button
+                            name="create_request_detail_no_redirect"
+                            type="object"
+                            string="CREATE"
+                            icon="fa-chevron-circle-right"
+                            class="btn-primary"
+                            attrs="{'invisible':['|', ('request_type_ref_id','!=',False), ('id', '!=', False)]}"
+                            style="margin-left: 10px;"
+                        />
+                        <button
+                            name="open_request_detail"
+                            type="object"
+                            string="NEXT"
+                            icon="fa-chevron-circle-right"
+                            class="btn-warning"
+                            attrs="{'invisible':[('request_type_ref_id','=',False)]}"
+                            style="margin-left: 10px;"
+                        />
+                    </footer>
+                    <group colspan="4" col="4" string="Monitoring">
+                        <field
+                            name="assign_to_id"
+                            string="Assigned To"
+                            options="{'no_create': True,'no_open':True}"
+                            readonly="1"
+                        />
+                        <field
+                            name="company_id"
+                            groups="base.group_multi_company"
+                            options="{'no_create': True}"
+                            force_save="1"
+                            attrs="{'readonly':[('state','!=','draft')]}"
+                        />
+                        <field name="date_requested" readonly="1" />
+                        <field
+                            name="create_uid"
+                            string="Requested By"
+                            options="{'no_create': True,'no_open':True}"
+                            readonly="1"
+                        />
+                        <field name="validator_ids" readonly="1" colspan="4">
+                            <tree>
+                                <field name="stage_id" />
+                                <field name="validator_id" />
+                                <field name="date_validated" />
+                            </tree>
+                        </field>
+                        <field name="date_validated" readonly="1" />
+                        <field
+                            name="last_validated_by_id"
+                            options="{'no_create': True,'no_open':True}"
+                            readonly="1"
+                        />
+                        <field name="date_applied" readonly="1" />
+                        <field
+                            name="applied_by_id"
+                            options="{'no_create': True,'no_open':True}"
+                            readonly="1"
+                        />
+                        <field name="date_rejected" readonly="1" />
+                        <field
+                            name="rejected_by_id"
+                            options="{'no_create': True,'no_open':True}"
+                            readonly="1"
+                        />
+                        <field name="rejected_remarks" colspan="4" readonly="1" />
+                    </group>
+                    <field name="request_type_ref_id" invisible="1" />
+                    <field name="last_activity_id" invisible="1" />
+                    <field name="applicant_id_domain" invisible="1" />
+                    <field name="id" invisible="1" />
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" />
+                    <field name="activity_ids" />
+                    <field name="message_ids" />
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="change_request_filter" model="ir.ui.view">
+        <field name="name">change_request_filter</field>
+        <field name="model">spp.change.request</field>
+        <field name="priority" eval="1" />
+        <field name="arch" type="xml">
+            <search string="Search Change Request">
+                <field name="name" string="Change Request #" />
+                <field name="registrant_id" />
+                <field name="request_type_ref_id" />
+                <field name="create_uid" string="Submitted By" />
+                <field name="applied_by_id" />
+            </search>
+        </field>
+    </record>
+
+    <!-- All Requests -->
+    <record id="action_change_request" model="ir.actions.act_window">
+        <field name="name">All Requests</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">spp.change.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="change_request_filter" />
+        <field
+            name="context"
+        >{'search_default_filter_my_cr': 1, 'search_default_filter_available_cr': 1}</field>
+        <field name="domain">[]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add a new change request!
+            </p><p>
+                Click the create button to enter a new change request.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_change_request_tree_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1" />
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_change_request_tree" />
+        <field name="act_window_id" ref="action_change_request" />
+    </record>
+
+    <record id="action_change_request_form_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1" />
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_change_request_form" />
+        <field name="act_window_id" ref="action_change_request" />
+    </record>
+
+    <menuitem
+        id="menu_change_request"
+        name="All Requests"
+        action="action_change_request"
+        parent="spp_change_request_request_root"
+        sequence="0"
+        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_agent,spp_change_request.group_spp_change_request_hq_validator"
+    />
+
+    <!-- Validated Requests -->
+    <record id="action_change_request_validated" model="ir.actions.act_window">
+        <field name="name">Validated Requests</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">spp.change.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="change_request_filter" />
+        <field name="context">{'create':False,'edit':False}</field>
+        <field name="domain">[('state','=','validated')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add a new change request!
+            </p><p>
+                Click the create button to enter a new change request.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_change_request_validated_tree_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1" />
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_change_request_tree" />
+        <field name="act_window_id" ref="action_change_request_validated" />
+    </record>
+
+    <record id="action_change_request_validated_form_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1" />
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_change_request_form" />
+        <field name="act_window_id" ref="action_change_request_validated" />
+    </record>
+
+    <menuitem
+        id="menu_change_request_validated"
+        name="Validated Requests"
+        action="action_change_request_validated"
+        parent="spp_change_request_for_application_root"
+        sequence="10"
+        groups="g2p_registry_base.group_g2p_admin,spp_change_request.group_spp_change_request_administrator,spp_change_request.group_spp_change_request_applicator"
+    />
+
+</odoo>
